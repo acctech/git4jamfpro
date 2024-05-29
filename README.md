@@ -1,19 +1,20 @@
-# git4jamfpro #
+# git4jamfpro
 
 A tool designed for CI/CD pipelines that uploads the most recently changed scripts and extension attributes in source control to a Jamf Pro server(s).
 
 This is a rewrite of the great (but very aged) [git2jss](https://github.com/badstreff/git2jss) python library written by [badstreff](https://github.com/badstreff).
 
-### What are the benefits of git4jamfpro? ###
+### What are the benefits of git4jamfpro?
 
-* Designed and packaged to be be ran in a CI/CD pipeline. We even include sample pipeline config files for CircleCI, Bitbucket, and GitHub to get you up and running quickly.
-* No python dependency; git4jamfpro is written in bash.
-* Uses modern Bearer Token authentication with Jamf Pro.
-* Allows you to download all scripts and extension attributes (EAs) in parallel from a Jamf Pro server.
-* You can update (or create) scripts/EAs locally, commit the changes to your repository, and the changed scripts/EAs are pushed to Jamf Pro automatically by your pipeline. This ensures that script/EA changes are always tracked in source control.
-* When a script/EA is updated, a backup can be left as an artifact in your CI/CD pipeline.
+- Designed and packaged to be be ran in a CI/CD pipeline. We even include sample pipeline config files for CircleCI, Bitbucket, and GitHub to get you up and running quickly.
+- No python dependency; git4jamfpro is written in bash.
+- Uses modern Bearer Token authentication with Jamf Pro. Added Client ID and Client Secret Support for Jamf Pro Cloud.
+- Allows you to download all scripts and extension attributes (EAs) in parallel from a Jamf Pro server.
+- You can update (or create) scripts/EAs locally, commit the changes to your repository, and the changed scripts/EAs are pushed to Jamf Pro automatically by your pipeline. This ensures that script/EA changes are always tracked in source control.
+- When a script/EA is updated, a backup can be left as an artifact in your CI/CD pipeline.
 
-### Setting up git4jamfpro ###
+### Setting up git4jamfpro
+
 1. Fork your own copy of the repository.
 2. Clone the repository locally:
 
@@ -53,5 +54,5 @@ git commit -m "initial commit with scripts/EAs"
 The Jamf Pro user account used with git4jamfpro must have the below permissions.
 | Jamf Pro Server Objects | Create | Read | Update | Delete |
 | ---------- | ------ | ---- | ------ | ------ |
-| Computer Extension Attributes	| ✓ | ✓ | ✓ |  |
-| Scripts	| ✓ | ✓ | ✓ |  |
+| Computer Extension Attributes | ✓ | ✓ | ✓ | |
+| Scripts | ✓ | ✓ | ✓ | |

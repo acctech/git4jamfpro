@@ -6,7 +6,7 @@ unameType=$(uname -s)
 scriptSummariesFile="/tmp/script_summaries.xml"
 eaSummariesFile="/tmp/ea_summaries.xml"
 
-unset jamfProURL apiUser apiPass dryRun downloadScripts downloadEAs pushChangesToJamfPro apiToken
+unset jamfProURL apiUser apiPass dryRun downloadScripts downloadEAs pushChangesToJamfPro apiToken clientId clientSecret authType
 
 # Clean up function that will run upon exiting
 function finish() {
@@ -29,6 +29,25 @@ function get_jamf_pro_api_token() {
 
     # Attempt to obtain the token
     apiToken=$(curl -s -u "$apiUser:$apiPass" "$jamfProURL/api/v1/auth/token" -X POST 2>/dev/null | jq -r '.token | select(.!=null)')
+    [[ -z "$apiToken" ]] && echo "Unable to obtain a Jamf Pro API Bearer Token; exiting" && exit 2
+
+    # Validate the token
+    validityHttpCode=$(curl -s -H "Authorization: Bearer $apiToken" "${jamfProURL}/api/v1/auth" -X GET -o /dev/null -w "%{http_code}")
+    parse_jamf_pro_api_http_codes "$validityHttpCode" || exit 3
+
+    return
+}
+
+# Function to get a Jamf Pro API Bearer Token using client credentials
+function get_jamf_pro_api_token_using_client_credentials(){
+    local healthCheckHttpCode validityHttpCode
+    
+    # Make sure we can contact the Jamf Pro server
+    healthCheckHttpCode=$(curl -s "$jamfProURL/healthCheck.html" -X GET -o /dev/null -w "%{http_code}")
+    [[ "$healthCheckHttpCode" != "200" ]] && echo "Unable to contact the Jamf Pro server; exiting" && exit 1
+
+    # Attempt to obtain the token
+    apiToken=$(curl -s "$jamfProURL/api/oauth/token" -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials" 2>/dev/null | jq -r '.access_token | select(.!=null)')
     [[ -z "$apiToken" ]] && echo "Unable to obtain a Jamf Pro API Bearer Token; exiting" && exit 2
 
     # Validate the token
@@ -436,6 +455,18 @@ do
             shift
             apiPass="$1"
             ;;
+        --auth-type)
+            shift
+            authType="$1"
+            ;;
+        --client-id)
+            shift
+            clientId="$1"
+            ;;
+        --client-secret)
+            shift
+            clientSecret="$1"
+            ;;
         --download-scripts)
             downloadScripts="true"
             ;;
@@ -465,11 +496,19 @@ done
 
 # Bail if our required cli options are missing
 [[ -z "$jamfProURL" ]] && echo "Error: Missing Jamf Pro URL (--url); exiting." && exit 1
-[[ -z "$apiUser" ]] && echo "Error: Missing API User (--username); exiting." && exit 2
-[[ -z "$apiPass" ]] && echo "Error: Missing API Password (--password); exiting." && exit 3
 
-# Get out Jamf Pro API Bearer Token
-get_jamf_pro_api_token
+# If grantType is equal to "client_credentials" look for clientId and clientSecret if its "user_login" then check apiUser and apiPass
+if [[ "$authType" == "client_credentials" ]]; then
+    [[ -z "$clientId" ]] && echo "Error: Missing Client ID (--client-id); exiting." && exit 2
+    [[ -z "$clientSecret" ]] && echo "Error: Missing Client Secret (--client-secret); exiting." && exit 3
+    # Get out Jamf Pro API Bearer Token
+    get_jamf_pro_api_token_using_client_credentials
+else
+    [[ -z "$apiUser" ]] && echo "Error: Missing API User (--username); exiting." && exit 2
+    [[ -z "$apiPass" ]] && echo "Error: Missing API Password (--password); exiting." && exit 3
+    # Get out Jamf Pro API Bearer Token
+    get_jamf_pro_api_token
+fi
 
 # Push any scripts/EAs changed in the last `git commit` to Jamf Pro
 if [[ "$pushChangesToJamfPro" == "true" ]]; then
